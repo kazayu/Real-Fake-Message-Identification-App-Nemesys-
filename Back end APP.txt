@@ -1,0 +1,159 @@
+package in.ac.bitsathy.adc.nemesys;
+
+import android.os.Bundle;
+import android.os.Handler;
+import android.support.design.widget.Snackbar;
+import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
+import android.view.View;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.ProgressBar;
+import android.widget.RelativeLayout;
+import android.widget.TextView;
+import android.widget.Toast;
+
+import com.android.volley.DefaultRetryPolicy;
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.StringRequest;
+import com.android.volley.toolbox.Volley;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+
+public class MainActivity extends AppCompatActivity {
+
+    String ip, news;
+
+    Button btn_get;
+
+    EditText txt_ip, txt_news;
+
+    RelativeLayout relativeLayout;
+
+    ProgressBar progressBar;
+
+    TextView txt_result;
+
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+
+        btn_get = findViewById(R.id.btn_get);
+
+        txt_ip = findViewById(R.id.txt_ip);
+        txt_news = findViewById(R.id.txt_news);
+
+        txt_result = findViewById(R.id.txt_result);
+
+        progressBar = findViewById(R.id.progressBar);
+
+        relativeLayout = findViewById(R.id.relative);
+
+
+
+        btn_get.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                ip = txt_ip.getText().toString().trim();
+                news = txt_news.getText().toString().trim();
+
+                if (news.isEmpty()) {
+                    txt_news.setError("Enter news");
+                    Snackbar.make(relativeLayout, "News can't be empty", Snackbar.LENGTH_SHORT).show();
+                } else if (ip.isEmpty()) {
+                    txt_ip.setError("Enter IP");
+                    Snackbar.make(relativeLayout, "Empty IP", Snackbar.LENGTH_SHORT).show();
+                } else {
+
+                    String url = "http://" + ip + "/Nemesys/index.php?msg=" + news;
+
+                    RequestQueue requestQueue = Volley.newRequestQueue(MainActivity.this);
+
+                    txt_result.setVisibility(View.GONE);
+                    progressBar.setVisibility(View.VISIBLE);
+
+
+                    StringRequest stringRequest = new StringRequest(Request.Method.POST, url,
+                            new Response.Listener<String>() {
+                                @Override
+                                public void onResponse(String response) {
+                                    Log.i("VOLLEY1", response);
+
+                                    progressBar.setVisibility(View.GONE);
+                                    try {
+                                        JSONObject result = new JSONObject(response);
+                                        txt_result.setText("Statement : "+result.getString("Statement")+"\n"+"Possibility : "+result.getString("Possibility"));
+
+                                    } catch (JSONException e) {
+                                        txt_result.setText(response);
+                                        e.printStackTrace();
+                                    }
+                                    //JSONObject jObject = (response);
+                                    txt_result.setVisibility(View.VISIBLE);
+                                    Snackbar.make(relativeLayout, response, Snackbar.LENGTH_SHORT).show();
+
+
+                                }
+                            },
+                            new Response.ErrorListener() {
+                                @Override
+                                public void onErrorResponse(VolleyError error) {
+                                    Log.e("VOLLEY2", error.toString());
+                                    progressBar.setVisibility(View.GONE);
+                                    Snackbar.make(relativeLayout, "Error try again", Snackbar.LENGTH_SHORT).show();
+                                }
+                            }) {
+                        @Override
+                        public String getBodyContentType() {
+                            return "application/x-www-form-urlencoded; charset=utf-8";
+                        }
+
+
+                    };
+
+                    stringRequest.setRetryPolicy(new DefaultRetryPolicy(
+                            10000,
+                            DefaultRetryPolicy.DEFAULT_MAX_RETRIES,
+                            DefaultRetryPolicy.DEFAULT_BACKOFF_MULT));
+
+                    requestQueue.add(stringRequest);
+
+                }
+
+
+            }
+        });
+
+
+    }
+
+
+    boolean doubleBackToExitPressedOnce = false;
+
+    @Override
+    public void onBackPressed() {
+        if (doubleBackToExitPressedOnce) {
+            super.onBackPressed();
+            return;
+        }
+        this.doubleBackToExitPressedOnce = true;
+        Snackbar.make(relativeLayout, "Press BACK again to exit", Toast.LENGTH_SHORT).show();
+        new Handler().postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                doubleBackToExitPressedOnce = false;
+            }
+        }, 2300);
+    }
+
+
+// http:// ip /store/subscribe.php?device=999&room_no= ? &string=completed
+
+
+}
